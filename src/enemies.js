@@ -54,7 +54,7 @@ class Enemy {
 			if (enemyController.checkIfValidSwarmMovement(this)) {
 				this.x += this.speedx
 				this.y += this.speedy
-				print("Moved to (" + this.x + ", " + this.y + ")")
+				//print("Moved to (" + this.x + ", " + this.y + ")")
 			}
 		}
 	}
