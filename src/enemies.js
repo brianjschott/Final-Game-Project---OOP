@@ -81,5 +81,10 @@ class EnemyController {
 		return true
 	}
 
+	//removes enemy at that spot in the list and plays sound
+	//also drops a coin at that location
+	enemyKill(i) {
+		this.enemyList.splice(i, 1)
+	}
 	
 }

@@ -13,9 +13,51 @@ The logic of the game will be split up into multiple files; you can find informa
 class CollisionManager {
 	//uses p5collide2d for all calculations
 
-	//checks for collisions between a player and an enemy
+	//checks for collisions between a player and an enemy. returns true if a hit occurs, false if not
+	playerEnemyCollisions() {
+		for (const e of enemyController.enemyList) {
+			if (collideRectRect(player.x, player.y, player.width, player.height, e.x, e.y, e.width, e.height)) {
+				return true
+			}
+		}
+		return false
+	}
 
-	//checks for collisions between a player and an item
+	//checks for collisions between sword arc and a enemy
+	//because collision function for arc only works with points, I check each enemy 4 times, at the midpoint of each side of the rectangle
+	//if there is a collision, remove the enemy from the enemyList
+	enemyAnimationCollisions() {
+		for (const a of ab.animations) {
+			for (let i = enemyController.enemyList.length - 1; i >= 0; i--) {
+			const e = enemyController.enemyList[i]
+				
+				//top
+				//print(`(${e.x},${e.y}) checking against arc of ${a.x}, ${a.y}, ${a.w}, ${a.h}, with angles ${a.startAngle} to ${a.endAngle}`)
+				//collidePointArc uses radius, and the arc() function uses the diameter, so we need to halve it
+				const HIT_OFFSET = a.w/2
+				if (collidePointArc(e.x + e.width/2, e.y, a.x, a.y, a.w-HIT_OFFSET, a.startAngle, a.endAngle)) {
+					print("A top hit")
+					enemyController.enemyKill(i)
+				}
+				//bottom
+				else if  (collidePointArc(e.x + e.width/2, e.y + e.height, a.x, a.y, a.w-HIT_OFFSET, a.startAngle, a.endAngle)) {
+					print("A bottom hit")
+					enemyController.enemyKill(i)
+				}
+				//left
+				else if  (collidePointArc(e.x, e.y + e.height/2, a.x, a.y, a.w-HIT_OFFSET, a.startAngle, a.endAngle)) {
+					print("A left hit")
+					enemyController.enemyKill(i)
+				}
+				//right
+				else if  (collidePointArc(e.x + e.width, e.y + e.height/2, a.x, a.y, a.w-HIT_OFFSET, a.startAngle, a.endAngle)) {
+					print("A right hit")
+					enemyController.enemyKill(i)
+				}
+			}
+		}
+	}
+	
 	
 }
 
@@ -28,6 +70,7 @@ let player = {
 	speed: 25,
 	sprites: [],
 	spriteFrame: 0,
+	attackFrame: 0,
 	//displays a different sprite image every set # of frames
 	display: function() {
 		if (this.sprites.length > 0) { //ensures no runtime errors if images fail to load
@@ -59,9 +102,24 @@ let player = {
 			this.x += this.speed
 		}
 	},
-	attack: function() {
-
-
+	attack(dir) {
+		const ATTACK_COOLDOWN_FRAMES = 30
+		if (this.attackFrame == 0 || frameCount > this.attackFrame + ATTACK_COOLDOWN_FRAMES) {
+			this.attackFrame = frameCount
+			random(swordSlashSounds).play()
+		ab.animationBuilder(frameCount,  15, {
+				name: "arc_fan_fade",
+				x: player.x+player.width/2,
+				y: player.y+player.height/2,
+				w: 100,
+				h: 100,
+				angleDegs: dir,
+				startColor: color(255, 0, 0),
+				numArcs: 10,
+				totalDegrees: 90
+				
+			})
+		}
 	}
 }
 
@@ -75,14 +133,14 @@ class AnimationEngine {
 	animationDraw() {
 		for (let i = 0; i < this.animations.length; i++) {
 			if (this.animations[i].start <= frameCount && this.animations[i].end >= frameCount) {
-				print("Calling animation func when " + this.animations[i].start + " < " + frameCount + " < " + this.animations[i].end)
+				//print("Calling animation func when " + this.animations[i].start + " < " + frameCount + " < " + this.animations[i].end)
 				this.animations[i].animationFunc()
 			}
 			else if (this.animations[i].end < frameCount) {
-				print("Removing animation")
-				print("Start frame is " + this.animations[i].start)
-				print("Current frame is " + frameCount)
-				print("End frame is " + this.animations[i].end)
+				// print("Removing animation")
+				// print("Start frame is " + this.animations[i].start)
+				// print("Current frame is " + frameCount)
+				// print("End frame is " + this.animations[i].end)
 				this.animations.splice(i,1)
 				i-- //decrease by one when removing animation - thank you Gavin!
 			}
@@ -122,23 +180,28 @@ class AnimationEngine {
 				for (let i = 1; i < animation.numArcs; i++) {
 					this.animations.push(
 						{
+							x: animation.x,
+							y: animation.y,
+							w: animation.w,
+							h: animation.h,
 							start: int(startFrame+((animationLength/animation.numArcs)*(i-1))),
 							end: int(startFrame + ((animationLength/animation.numArcs)*i)-1 + BUFFER),
+							startAngle: (animation.angleDegs - 45)+(i*animation.totalDegrees/animation.numArcs) ,
+								endAngle:  (animation.angleDegs - 45)+((i+1)*animation.totalDegrees/animation.numArcs)-1,
 							animationFunc: function() {
 								angleMode(DEGREES)
 								let c = animation.startColor
 								c.setAlpha(255-(i*(255/animation.numArcs))) 
-								print(alpha(c))
+								//print(alpha(c))
 								noStroke()
 								fill(c)
 								// print("x is " + animation.x)
 								// print("y is " + animation.y)
-								print(animation.angleDegs - 45)
-								const startAngle = (animation.angleDegs - 45)+(i*animation.totalDegrees/animation.numArcs) 
-								const endAngle = (animation.angleDegs - 45)+((i+1)*animation.totalDegrees/animation.numArcs)-1
-								print(startAngle + " to " + endAngle)
+								// print(animation.angleDegs - 45)
+								
+								// print(this.startAngle + " to " + this.endAngle)
 								// arc(animation.x, animation.y, animation.w, animation.h, (animation.angleDegs - 45)+(i*animation.totalDegrees/animation.numArcs), (animation.angleDegs - 45)+(i*animation.totalDegrees/animation.numArcs)-1)
-								arc(animation.x, animation.y, animation.w, animation.h,startAngle, endAngle)
+								arc(animation.x, animation.y, animation.w, animation.h,this.startAngle, this.endAngle)
 
 							}
 						}
@@ -173,6 +236,9 @@ const ANIMATION_FRAME_COUNT = 30
 //background images
 let grassTile
 
+//sounds
+let swordSlashSounds = []
+
 function preload() {
 	//adds each frame of character animation to an array
 	player.sprites.push(loadImage("assets/img/character_0000.png"))
@@ -184,13 +250,21 @@ function preload() {
 	//background
 	grassTile = loadImage("assets/img/tile_0038.png")
 
+	swordSlashSounds.push(loadSound("assets/sound/sword_swing_1.mp3"))
+	swordSlashSounds.push(loadSound("assets/sound/sword_swing_2.mp3"))
+
 }
 function setup() {
+	angleMode(DEGREES)
 	createCanvas(400, 400)
 	//adds initial enemy set to the world by pushing enemies into the enemyList
 	//will likely move this code into EnemyController class
 	for (let i = 0; i < MAX_ENEMIES; i++) {
 		enemyController.enemyList.push(new Enemy(enemyController.enemySprites))
+	}
+
+	for (const s of swordSlashSounds) {
+		s.setVolume(.5)
 	}
 }
 
@@ -206,6 +280,8 @@ function draw() {
 		enemy.move()
 	}
 	ab.animationDraw()
+	col.playerEnemyCollisions()
+	col.enemyAnimationCollisions()
 }
 
 //draws background by tiling an image across the canvas
@@ -238,52 +314,26 @@ function keyPressed() {
 		player.move(keyCode)
 	}
 	let dir = 0
+	//up
 	if (keyIsDown(87)) {
 		dir = 270
-		attack(dir)
-		
+		player.attack(dir)
 	}
+	//right
 	else if (keyIsDown(68)) {
 		dir = 0
-		attack(dir)
-		
+		player.attack(dir)
 	}
+	//down
 	else if (keyIsDown(83)) {
 		dir = 90
-		attack(dir)
-		
+		player.attack(dir)
 	}
+	//left
 	else if (keyIsDown(65)) {
 		dir = 180
-	  attack(dir)
-		
+	  player.attack(dir)		
 	}
-
-	const keyToDeg = {
-		87: 270, //up
-		68: 0, //right
-		83: 90, //down
-		65: 180		
-	}
-	
-	if (keyCode == 32) {
-			//Animation test
-	}
-}
-
-function attack(dir) {
-	ab.animationBuilder(frameCount,  15, {
-			name: "arc_fan_fade",
-			x: player.x+player.width/2,
-			y: player.y+player.height/2,
-			w: 100,
-			h: 100,
-			angleDegs: dir,
-			startColor: color(255, 0, 0),
-			numArcs: 10,
-			totalDegrees: 90
-			
-		})
 }
 
 //This code prevents the scrolling of the window using the Space bar or arrow keys
