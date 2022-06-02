@@ -1,5 +1,4 @@
 //Constants
-const MAX_ENEMIES = 3
 const ENEMY_MOVEMENT_FRAME_COUNT = 120
 const ENEMY_SIZE = 25
 //Enemy class
@@ -7,13 +6,14 @@ class Enemy {
 	constructor(_sprites) {
 		this.x = roundToNearest(random(0, width - BUFFER), 25)
 		this.y = roundToNearest(random(0, height - BUFFER), 25)
-		print(this.x + " " + this.y)
+		//print(this.x + " " + this.y)
 		this.width = ENEMY_SIZE
 		this.height = ENEMY_SIZE
 		this.speedx = 25 //moves at half of the player's speed
 		this.speedy = 25
 		this.sprites = _sprites
 		this.spriteFrame = 0
+
 		//images must be included in preload() so it is not here
 	} 
 
@@ -34,7 +34,7 @@ class Enemy {
 	}
 
 	move() {
-		//gets location of Player and moves it toward player
+		//gets location of Player and moves enemy toward player
 		if (frameCount % ENEMY_MOVEMENT_FRAME_COUNT == 0) {
 		if (player.x > this.x) {
 			this.speedx = Math.abs(this.speedx)
@@ -50,24 +50,52 @@ class Enemy {
 			this.speedy = -Math.abs(this.speedy)
 		}
 
-			//only moves the player if the move is valid
+			//only moves the enemy if the move is valid
 			if (enemyController.checkIfValidSwarmMovement(this)) {
 				this.x += this.speedx
 				this.y += this.speedy
-				//print("Moved to (" + this.x + ", " + this.y + ")")
+				////print("Moved to (" + this.x + ", " + this.y + ")")
 			}
 		}
 	}
 
 }
+const ENEMY_SPAWN_FRAME_INTERVAL = 240
+const MAX_ENEMIES = 12
 
 //EnemyController class that controls where the Enemies spawn and how often
 class EnemyController {
 	constructor() {
 		this.enemyList = []
 		this.enemySprites = []
+		this.enemySpawnFrame = 0
+		this.enemyWaveSpawnNumber = 3
 	}
 
+	spawnController() {
+		if (this.enemyList.length < MAX_ENEMIES && (this.enemySpawnFrame == 0 || this.enemySpawnFrame + ENEMY_SPAWN_FRAME_INTERVAL < frameCount)) {
+			this.spawnWave(this.enemyWaveSpawnNumber)
+			this.enemySpawnFrame = frameCount
+			crowSpawnSound.play()
+		}
+	}
+	
+	// if spot would be empty next frame, add an enemy there
+	spawnWave(numEnemies) {
+		for (let i = 0; i < numEnemies; i++) {
+			if (this.enemyList.length < MAX_ENEMIES) {
+				let triesToPlace  = 1
+				while (triesToPlace < 10) {
+					let e = new Enemy(this.enemySprites)
+					if (this.checkIfValidSwarmMovement(e)) {
+						this.enemyList.push(e)
+						break;
+					}
+					triesToPlace++
+				}
+			}
+		}
+	}
 	//given an Enemy's position next frame , check all the other Enemies' CURRENT positions. If its new position would stand in the next frame's position, return false. If the move is OK, retun true
 	//added in a collision buffer so that it doesn't detect the edges of other images
 	//this function does mean that some sprites will not move every frame. I can update this later to give them some optional movement choices
@@ -85,6 +113,7 @@ class EnemyController {
 	//also drops a coin at that location
 	enemyKill(i) {
 		this.enemyList.splice(i, 1)
+		crowKillSound.play()
 	}
 	
 }
