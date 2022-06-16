@@ -21,15 +21,15 @@ const INVUL_FRAMES_LENGTH = 120
 
 
 //Global variables
-let gameover = false
-let enemyController = new EnemyController()
-let ab = new AnimationEngine()
-let col = new CollisionManager()
+gameover = false
+enemyController = new EnemyController()
+ab = new AnimationEngine()
+col = new CollisionManager()
 let isPaused = false, isGameOver = false
 let lastKeyPressed
 //Constants
 const ANIMATION_FRAME_COUNT = 30
-const GRID_SIZE = 25 //controls size of each grid space AND each character on the screen
+
 //background images
 let grassTile
 //sprites
