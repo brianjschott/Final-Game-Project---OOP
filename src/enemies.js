@@ -1,6 +1,7 @@
 //Constants
 const ENEMY_MOVEMENT_FRAME_COUNT = 120
 const ENEMY_SIZE = 25
+const BUFFER = 25
 //Enemy class
 class Enemy {
 	constructor(_sprites) {

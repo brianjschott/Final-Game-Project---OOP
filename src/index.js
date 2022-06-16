@@ -28,9 +28,8 @@ let col = new CollisionManager()
 let isPaused = false, isGameOver = false
 let lastKeyPressed
 //Constants
-const BUFFER = 25
 const ANIMATION_FRAME_COUNT = 30
-
+const GRID_SIZE = 25 //controls size of each grid space AND each character on the screen
 //background images
 let grassTile
 //sprites
@@ -99,13 +98,11 @@ function draw() {
 	}
 	col.enemyAnimationCollisions()
 	enemyController.spawnController()
+	
 	pauseMenuCheck()
-
 	ui.displayPlayerLives()
 
 }
-
-
 
 //draws background by tiling an image across the canvas
 function drawBackground() {
